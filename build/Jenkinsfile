@@ -4,6 +4,7 @@ pipeline {
         
         IMAGE_NAME = 'caps'
         USER_NAME = 'arungupta6467'
+        VERSION = '1.0.0'
         WD = '/Users/jaymojnidar/work/code/arun/github.com/uda_devops_capstone/build'
     } 
     stages {
@@ -50,14 +51,14 @@ pipeline {
 
 			 }
 			
-			sh 'docker tag ${IMAGE_NAME}:latest ${USER_NAME}/${IMAGE_NAME}:$BUILD_NUMBER'
-			sh 'docker push ${USER_NAME}/${IMAGE_NAME}:$BUILD_NUMBER'
+			sh 'docker tag ${IMAGE_NAME}:latest ${USER_NAME}/${IMAGE_NAME}:${VERSION}-$BUILD_NUMBER'
+			sh 'docker push ${USER_NAME}/${IMAGE_NAME}:${VERSION}-$BUILD_NUMBER'
 			}
         }
         
         stage ('kuberneties') {
         steps {
-           sh '${WD}/deploy_on_kube.sh ${USER_NAME}/${IMAGE_NAME} $BUILD_NUMBER'
+           sh '${WD}/deploy_on_kube.sh ${USER_NAME}/${IMAGE_NAME} ${VERSION}-$BUILD_NUMBER'
         }
         
         }
