@@ -1,0 +1,43 @@
+Description: >
+  Jay Mojnidar / Udacity
+  My second Project server resources defintions
+
+Parameters:
+  EnvironmentName:
+    Description: An env name that will be prefixed to resource
+    Type: String
+  
+    
+Resources:
+  myCluster:
+    Type: 'AWS::EKS::Cluster'
+    Properties:
+      Name: !Sub ${EnvironmentName}
+      Version: '1.14'
+      RoleArn:  "arn:aws:iam::187177662214:role/eksroles-eksServiceRole-KEOOCCZLN55A"
+      #- Fn::ImportValue: !Sub "${EnvironmentName}-RoleArn"
+      ResourcesVpcConfig:
+        #SecurityGroupIds:
+         #defaults
+        SubnetIds:
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUBSUB1"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PUBSUB2"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRISUB1"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRISUB2"
+                        
+  EKSNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    DependsOn: myCluster
+    Properties:
+      #InstanceTypes: -default
+      #AMIType: default
+      ClusterName: !Sub ${EnvironmentName}
+      NodeRole: "arn:aws:iam::187177662214:role/eksroles-NodeInstanceRole-1N0VED058MJ28"
+      #- Fn::ImportValue: !Sub "${EnvironmentName}-NodeInstanceRole"
+      ScalingConfig:
+        MinSize: 1
+        DesiredSize: 3
+        MaxSize: 4
+      Subnets:
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRISUB1"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRISUB2"

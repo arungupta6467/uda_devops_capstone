@@ -1,0 +1,26 @@
+[
+{
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "Capstone"
+  },
+  {
+    "ParameterKey": "VpcCIDR",
+    "ParameterValue": "10.0.0.0/16"
+  },
+  {
+    "ParameterKey": "MyPubSub1CIDR",
+    "ParameterValue": "10.0.0.0/24"
+  },
+  {
+    "ParameterKey": "MyPubSub2CIDR",
+    "ParameterValue": "10.0.1.0/24"
+  },
+  {
+    "ParameterKey": "MyPriSub1CIDR",
+    "ParameterValue": "10.0.2.0/24"
+  },
+  {
+    "ParameterKey": "MyPriSub2CIDR",
+    "ParameterValue": "10.0.3.0/24"
+  }
+]

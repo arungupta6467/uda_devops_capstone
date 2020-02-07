@@ -1,0 +1,231 @@
+Description: >
+  Jay Mojnidar / Udacity
+  My second Project networking resources defintions
+
+Parameters:
+  EnvironmentName:
+    Description: An env name that will be prefixed to resource
+    Type: String
+  VpcCIDR:
+    Description: VPC CIDR
+    Type: String
+    Default: 10.0.0.0/16
+  MyPubSub1CIDR:
+    Description: CIDR for MyPubSub1CIDR 
+    Type: String
+    Default: 10.0.0.0/24
+  MyPubSub2CIDR:
+    Description: CIDR for MyPubSub2CIDR
+    Type: String
+    Default: 10.0.1.0/24
+  MyPriSub1CIDR:
+    Description: CIDR for MyPriSub1CIDR 
+    Type: String
+    Default: 10.0.2.0/24
+  MyPriSub2CIDR:
+    Description: CIDR for MyPriSub2CIDR 
+    Type: String
+    Default: 10.0.3.0/24 
+Resources:
+#Handling the network related items first.
+#Creating VPC
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+  #Creating subnets
+  MyPubSub1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref MyPubSub1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+  MyPubSub2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref MyPubSub2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+          
+  MyPriSub1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref MyPriSub1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+          
+  MyPriSub2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref MyPriSub2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+ 
+
+#Creating IGW
+  MyIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+  
+  MyIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MyIGW
+      VpcId: !Ref MyVPC
+
+#Nat Gateways
+  MyNatGt1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: MyIGWAttachment
+    Properties:
+      Domain: VPC
+  MyNatGt2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: MyIGWAttachment
+    Properties:
+      Domain: VPC
+  MyNatGt1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt MyNatGt1EIP.AllocationId
+      SubnetId: !Ref MyPubSub1  
+  MyNatGt2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt MyNatGt2EIP.AllocationId
+      SubnetId: !Ref MyPubSub2  
+
+#Setting up routes
+#here you create a routing table, then create routes with in it in the next DefPubRoutes
+  PubRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes  
+  #Explanation: This is routing from internal resource to external internet
+  # 1. Wait for MyIGWAttachment to be created in order to create this
+  # 2. If the resource with in this subnet wants to access any IP (0.0.0.0/0) it should 
+  #    go through MyIGW internet gateway
+  DefPubRoutes:
+    DependsOn: MyIGWAttachment
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PubRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyIGW
+  #Associate the route table created to the subnet
+  MyPubSub1RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PubRouteTable
+       SubnetId: !Ref MyPubSub1
+  MyPubSub2RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PubRouteTable
+       SubnetId: !Ref MyPubSub2
+  #Now we will create routing for private subnets. 
+  #In this case traffic will go to NatGateway instead of InternetGateway
+  PriRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-PrivateRoutes(AZ1) 
+  PriRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-PrivateRoutes(AZ2)  
+  DefPriRoutes1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PriRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref MyNatGt1
+  DefPriRoutes2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PriRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref MyNatGt2
+  #Associate the route table created to the subnet
+  MyPri1Sub1RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PriRouteTable1
+       SubnetId: !Ref MyPriSub1
+  MyPri2Sub12RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PriRouteTable2
+       SubnetId: !Ref MyPriSub2
+
+Outputs:
+  capstoneVPC:
+    Description: The VPC that contain all the resources for second project
+    Value: !Ref MyVPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPC-ID
+  CapstonePubSub1:
+    Description: Exporting the pubsub1 subnet
+    Value: !Ref MyPubSub1
+    Export: 
+      Name: !Sub ${EnvironmentName}-PUBSUB1
+  CapstonePubSub2:
+    Description: The Pubsub 2 for external access
+    Value: !Ref MyPubSub2
+    Export:
+      Name: !Sub ${EnvironmentName}-PUBSUB2
+      
+  CapstonePriSub1:
+    Description: Exporting the prisub1 subnet
+    Value: !Ref MyPriSub1
+    Export: 
+      Name: !Sub ${EnvironmentName}-PRISUB1
+  CapstonePriSub2:
+    Description: The Prisub 2 for external access
+    Value: !Ref MyPriSub2
+    Export:
+      Name: !Sub ${EnvironmentName}-PRISUB2
+
+
+  #Output a list of public subnets
+  CapstonePubSubs:
+    Description: List of public subnets defined under the VPC in capstone project
+    Value: !Join [',', [!Ref MyPubSub1, !Ref MyPubSub2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PubSubs
+  CapstonePriSubs:
+    Description: List of private subnets defined under the VPC in sec project
+    Value: !Join [',', [!Ref MyPriSub1, !Ref MyPriSub2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PriSubs
+     

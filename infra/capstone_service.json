@@ -1,0 +1,22 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "capstone",
+    "labels": {
+      "app": "capstone"
+    }
+  },
+  "spec": {
+    "ports": [
+     {
+        "port": 80,
+        "targetPort": "http-server"
+     }
+    ],
+    "selector": {
+      "app": "bcapstone"
+     },
+     "type": "LoadBalancer"
+  }
+}

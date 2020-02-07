@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    environment {
+        
+        IMAGE_NAME = 'caps'
+        USER_NAME = 'arungupta6467'
+        WD = '/Users/jaymojnidar/work/code/arun/github.com/uda_devops_capstone/build'
+    } 
+    stages {
+        stage('PreBuild') { 
+            
+            steps {
+                //using script here to handle if there is an error due to non-existent previous build
+                script {
+                    try {
+                        sh '${WD}/pre_build.sh ${IMAGE_NAME}' 
+                        echo 'Cleaned up in preBuild'
+                        } catch (Exception e) {
+                            echo 'Handling the exception!'
+                        }
+                }
+            }
+            
+            
+        }
+        stage('Build') { 
+            steps {
+                sh '${WD}/build.sh ${IMAGE_NAME}'
+            }
+            
+        }
+    	stage('Lint HTML') {
+          steps {
+              echo 'Tasting...!!'
+              sh '${WD}/test.sh'
+             
+              echo 'Test stage Success!!'
+          }
+        }
+    	stage('DeployLocal') { 
+            steps {
+                sh '${WD}/run_docker.sh ${IMAGE_NAME}'
+            }
+        }
+        
+        stage ('Push') {
+           steps {
+            withCredentials([string(credentialsId: 'dockerP', variable: 'dockerP')]) {
+    		   sh "docker login -u arungupta6467 -p ${dockerP}"
+
+			 }
+			
+			sh 'docker tag ${IMAGE_NAME}:latest ${USER_NAME}/${IMAGE_NAME}:$BUILD_NUMBER'
+			sh 'docker push ${USER_NAME}/${IMAGE_NAME}:$BUILD_NUMBER'
+			}
+        }
+        
+        stage ('kuberneties') {
+        steps {
+           sh '${WD}/deploy_on_kube.sh ${USER_NAME}/${IMAGE_NAME} $BUILD_NUMBER'
+        }
+        
+        }
+        
+    }
+
+}

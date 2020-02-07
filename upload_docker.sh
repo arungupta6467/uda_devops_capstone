@@ -1,6 +1,7 @@
-if [$# -lt 1]
+if [ $# -lt 1 ]
   then
   echo "Usage upload_docker.sh <docker_image_name>"
+  return 1
 fi
 
 dockerpath=arungupta6467/uda_$1

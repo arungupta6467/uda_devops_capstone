@@ -1,0 +1,37 @@
+{
+  "kind": "ReplicationController",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "bcapstone",
+    "labels": {
+      "app": "bcapstone"
+     }
+  },
+  "spec": {
+    "replicas": 3,
+    "selector": {
+      "app": "bcapstone"
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "bcapstone"
+        }
+      },
+      "spec": {
+        "containers": [
+         {
+            "name": "bcapstone",
+            "image": "BUILD_NUMBER",
+            "ports": [
+              {
+                "name": "http-server",
+                "containerPort": 80
+               }
+             ]
+         }
+        ]
+     }
+    }
+  }
+}
