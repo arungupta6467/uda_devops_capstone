@@ -15,7 +15,7 @@
      }
     ],
     "selector": {
-      "app": "bcapstone"
+      "app": "gcapstone"
      },
      "type": "LoadBalancer"
   }

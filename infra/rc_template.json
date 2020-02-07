@@ -2,26 +2,26 @@
   "kind": "ReplicationController",
   "apiVersion": "v1",
   "metadata": {
-    "name": "bcapstone",
+    "name": "gcapstone",
     "labels": {
-      "app": "bcapstone"
+      "app": "gcapstone"
      }
   },
   "spec": {
     "replicas": 3,
     "selector": {
-      "app": "bcapstone"
+      "app": "gcapstone"
     },
     "template": {
       "metadata": {
         "labels": {
-          "app": "bcapstone"
+          "app": "gcapstone"
         }
       },
       "spec": {
         "containers": [
          {
-            "name": "bcapstone",
+            "name": "gcapstone",
             "image": "BUILD_NUMBER",
             "ports": [
               {
